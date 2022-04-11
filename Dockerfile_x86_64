@@ -1,0 +1,26 @@
+FROM rocker/geospatial:4.0.3
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN chown rstudio:rstudio -R /home/rstudio/
+RUN chmod -R 775 /home/rstudio/
+COPY ./ /home/rstudio/
+RUN chmod -R 775 /home/rstudio/
+RUN chown rstudio:rstudio -R /home/rstudio/
+
+RUN apt-get update && \
+    apt-get install -y binutils libproj-dev gdal-bin grass qgis qgis-plugin-grass saga
+
+RUN apt-get install -y \
+    fonts-ipaexfont \
+    fonts-noto-cjk
+
+RUN install2.r --error \
+    remotes \
+    renv
+
+RUN Rscript -e "remotes::install_github('paleolimbot/qgisprocess')"
+
+COPY renv.lock renv.lock
+RUN R -e 'renv::consent(provided = TRUE); renv::restore()'
+

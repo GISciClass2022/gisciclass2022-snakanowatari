@@ -1,0 +1,106 @@
+---
+title: "第３回目"
+author: "学籍番号：名前"
+date: "4/28/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. 
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. 
+<!-- For more details on using R Markdown see <http://rmarkdown.rstudio.com>.  -->
+  
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
+You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+## pythonのテスト
+
+```{python}
+x = 'hello, python world!'
+print(x.split(' '))
+```
+
+
+## plotのテスト
+```{r, simple-plot-cap, fig.cap="A simple plot", fig.align='center'}
+x <- 1:10    # create an x variable
+y <- 10:1    # create a y variable
+dataf <- data.frame(x = x, y = y)
+plot(dataf$x, dataf$y, xlab = "x axis", ylab = "y axis")
+```
+
+
+## kableのテスト
+```{r, kable-table}
+library(knitr)
+kable(iris[1:10,])
+```
+
+kable-table2がない？
+```{r, kable-table2}
+kable(iris[1:10,], digits = 0, align = 'c', 
+       col.names = c('sepal length', 'sepal width', 
+       'petal length', 'petal width', 'species'))
+```
+
+## inlineのテスト
+irisのデータは (variable names:  `r names(iris)[1:4]`) がある。
+
+
+# chapter 2
+## R basic
+四則演算ができる
+```{r plus}
+2+2
+```
+
+```{r log}
+log(1) 
+pi
+```
+
+文字と文字をたすことができない
+```{r plus char}
+char_obj <- "hello"
+char_obj2 <- "world!"
+#char_obj3 <- char_obj + char_obj2
+#Error in char_obj+char_obj2:non-numeric argument to binary operator
+
+paste(char_obj, char_obj2,sep = "-")
+paste0(char_obj, char_obj2)
+
+`%+%` <- function(x,y){paste(x,y, sep= " ")}
+
+char_obj %+% char_obj2
+```
+
+
+## table
+```{r table test}
+gis.vs.gds.table <- read.csv("~/geocompr-master/extdata/gis-vs-gds-table.csv")
+kable(gis.vs.gds.table)
+```
