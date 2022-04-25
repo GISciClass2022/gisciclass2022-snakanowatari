@@ -1,6 +1,6 @@
 ---
 title: "第３回目"
-author: "学籍番号：名前"
+author: "学籍番号：22MM349 中野渡駿"
 date: "4/28/2021"
 output:
   html_document:
@@ -12,30 +12,6 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-## R Markdown
-
-This is an R Markdown document. 
-Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. 
-<!-- For more details on using R Markdown see <http://rmarkdown.rstudio.com>.  -->
-  
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
-You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 
 ## pythonのテスト
 
@@ -78,9 +54,25 @@ irisのデータは (variable names:  `r names(iris)[1:4]`) がある。
 2+2
 ```
 
+対数
 ```{r log}
 log(1) 
 pi
+```
+
+累乗と平方根
+```{r pow}
+4^2
+sqrt(4)
+```
+
+## objects
+cなどとは違い，変数の型は定義不要．
+(Alt + =で<-入力可)
+```{r objects}
+num_obj <- 48
+num_obj2 <- 2000
+num_obj + num_obj2
 ```
 
 文字と文字をたすことができない
@@ -98,9 +90,100 @@ paste0(char_obj, char_obj2)
 char_obj %+% char_obj2
 ```
 
-
 ## table
 ```{r table test}
 gis.vs.gds.table <- read.csv("~/geocompr-master/extdata/gis-vs-gds-table.csv")
 kable(gis.vs.gds.table)
 ```
+
+
+##vector
+ベクトル
+```{r vector}
+my_vec <- c(2,3,1,6,4,3,3,7)
+mean(my_vec) #平均
+var(my_vec) #分散
+sd(my_vec) #標準偏差
+length(my_vec) #長さ(要素数)
+
+my_vec[3] #3番目の要素
+my_vec[c(1,5,6,8)] #1,5,6,8番目の要素
+my_vec[3:8] #3から8番目の要素
+my_vec[my_vec > 3] #3より大きい要素
+my_vec > 3 #3より大きいかの判定
+my_vec < 6 & my_vec > 2 #AND演算は&で行う(同様にOR演算は|)
+
+my_vec[c(6,7)] <- 100 #6,7番目の要素を100にする
+
+my_seq <- 10:1 #10から1までの整数
+my_seq
+my_seq2 <- seq(from = 1, to = 10, by = 0.8) #1から10まで0.8ごとの要素
+my_seq2
+my_seq3 <- rep("abc", times = 3) #abcという要素3つ．文字列も要素にすることが可能
+my_seq3
+my_seq4 <- rep(1:5, each = 3) #別パターンの繰り返し
+my_seq4
+
+temp <- c(7.2,NA,7.1,6.9,6.5,5.8,5.5,NA,5.5) #データの抜け落ち
+mean(temp) #抜け落ちがあると平均はNAになる
+mean(temp, na.rm = TRUE) #抜け落ちていないデータで平均をとるならこう
+```
+
+## help
+```{r help}
+help("mean") #?meanでも同じ
+
+help.search("mean") #??meanでも同じ
+```
+
+# chapter 3
+## data type
+データ型はclassで出せる．is.XXXではその変数がXXX型と一致するか判定できる
+```{r data_type}
+num <- 2.2
+char <- "hello"
+logi <- TRUE #TRUEかFALSEか
+class(num)
+class(char)
+class(logi)
+is.numeric(num)
+is.character(num)
+num_char <- as.character(num) #文字列に変換
+char_num <- as.numeric(char) #warningが出てNAになってしまう
+char_num
+```
+
+## array
+配列の操作．転置なども可能
+```{r array}
+my_mat <- matrix(1:16, nrow = 4, byrow = TRUE)
+my_array <- array(1:16, dim = c(2, 4, 2))
+rownames(my_mat) <- c("A", "B", "C", "D") #行の名前
+colnames(my_mat) <- c("a", "b", "c", "d") #列の名前
+my_mat
+my_mat_t <- t(my_mat)
+```
+
+## data frames
+```{r data_frames}
+p.height <- c(180,155,160,166,181)
+p.weight <- c(65,50,52,58,70)
+p.names <- c("Joanna","Charlotte","Helen","Karen","Amt")
+
+dataf <- data.frame(height = p.height, weight = p.weight, names = p.names)
+dataf
+dim(dataf) #次元数
+str(dataf)
+```
+
+## import
+データのインポートは，ファイルを.csv形式で保存したのち，Files→ファイル名.csv→Import Dataset...
+ここでは，flower.csvをインポートした．
+```{r import}
+#str(flower)
+#flower$height
+#summary(flower)
+#table(flower$nitrogen, flower$treat)
+#with(flower, tapply(height, list(nitrogen, treat), mean))
+```
+
