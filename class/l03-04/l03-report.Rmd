@@ -1,7 +1,7 @@
 ---
 title: "第３回目"
-author: "学籍番号：22MM349 中野渡駿"
-date: "4/28/2021"
+author: "22MM349：中野渡駿"
+date: "2022/4/19"
 output:
   html_document:
     toc: yes
