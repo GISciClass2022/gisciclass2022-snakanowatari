@@ -1,0 +1,261 @@
+---
+title: "l07-08"
+author: "Shun Nakanowatari"
+date: "2022/5/10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library and preparing}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+```
+
+```{r chapter 3.2.3}
+world
+coffee_data
+
+world_coffee = left_join(world, coffee_data, by = "name_long")
+class(world_coffee)
+world_coffee
+plot(world_coffee["coffee_production_2017"])
+
+world_coffee_inner <- inner_join(world, coffee_data)
+world_coffee_inner
+plot(world_coffee_inner["coffee_production_2017"])
+```
+
+```{r chapter 3.2.4}
+world_new = world # do not overwrite our original data
+world_new$pop_dens = world_new$pop / world_new$area_km2
+world_new
+#↑↓same
+world_new2 <- world %>%
+  mutate(pop_dens = pop/area_km2)
+world_new2
+
+world %>% transmute(pop_dens = pop/area_km2)
+
+world %>% transmute(pop_dens = pop/area_km2) %>% st_drop_geometry()
+```
+
+```{r chapter 3.2.5}
+elev = raster(nrows = 6, ncols = 6, res = 0.5,
+              xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+              vals = 1:36)
+plot(elev)
+```
+
+```{r 03-attribute-operations-53, eval = FALSE}
+grain_order = c("clay", "silt", "sand")
+grain_char = sample(grain_order, 36, replace = TRUE)
+grain_fact = factor(grain_char, levels = grain_order)
+grain = raster(nrows = 6, ncols = 6, res = 0.5, 
+               xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+               vals = grain_fact)
+```
+
+```{r 03-attribute-operations-54, include = FALSE}
+library(spData)
+data("elev")
+data("grain")
+plot(grain)
+
+```
+```{r 03-attribute-operations-58, eval = FALSE}
+# row 1, column 1
+elev[1, 1]
+# cell ID 1
+elev[1]
+
+r_stack = stack(elev, grain)
+names(r_stack) = c("elev", "grain")
+# three ways to extract a layer of a stack
+raster::subset(r_stack, "elev")
+r_stack[["elev"]]
+r_stack$elev
+```
+
+#chapter 4
+
+```{r filter}
+canterbury = nz %>% filter(Name == "Canterbury")
+canterbury_height = nz_height[canterbury, ]
+```
+
+
+
+
+--------------------------------------------------------
+--------------------------------------------------------
+
+
+
+
+# prepareing
+ライブラリを読み込む．
+```{r library}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+library(spDataLarge)
+```
+
+
+# chapter 3
+worldのデータにcoffee_dataをくっつける．両方のデータに置いてname_longが共通の列なのでその列を参照してworldにcoffee_dataを追加している．name_longのデータが完全に一致しない国においてはcoffee_dataがNAとして追加されている．
+left_joinは第一引数のデータに第二引数のデータを追加するという関数．
+left_joinの代わりにinner_joinを使用すると，NAになる部分が弾かれる．
+```{r chapter 3.2.3}
+world
+coffee_data
+
+world_coffee = left_join(world, coffee_data, by = "name_long")
+class(world_coffee)
+world_coffee
+
+plot(world_coffee["coffee_production_2017"])
+```
+
+st_drop_geometry()を使用すると，データフレームのみ残る．
+```{r chapter 3.2.4}
+world_new = world # do not overwrite our original data
+world_new$pop_dens = world_new$pop / world_new$area_km2
+world_new
+#↑↓same
+world_new2 <- world %>%
+  mutate(pop_dens = pop/area_km2)
+world_new2
+
+world %>% transmute(pop_dens = pop/area_km2)
+
+world %>% transmute(pop_dens = pop/area_km2) %>% st_drop_geometry()
+```
+
+
+
+```{r chapter 3.2.5}
+elev = raster(nrows = 6, ncols = 6, res = 0.5,
+              xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+              vals = 1:36)
+plot(elev)
+
+grain_order = c("clay", "silt", "sand")
+grain_char = sample(grain_order, 36, replace = TRUE)
+grain_fact = factor(grain_char, levels = grain_order)
+grain = raster(nrows = 6, ncols = 6, res = 0.5, 
+               xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+               vals = grain_fact)
+
+library(spData)
+data("elev")
+data("grain")
+plot(grain)
+
+```
+
+ラスターの中身のデータの取り出し方
+```{r raster_inside}
+elev[1, 1]
+elev[1]
+```
+
+# chapter 4
+空間上のデータを抜き出す．
+```{r filter}
+canterbury = nz %>% filter(Name == "Canterbury")
+canterbury_height = nz_height[canterbury, ]
+
+sel_sgbp = st_intersects(x = nz_height, y = canterbury)
+class(sel_sgbp)
+sel_logical = lengths(sel_sgbp) > 0
+canterbury_height2 = nz_height[sel_logical, ]
+```
+
+```{r 04-spatial-operations-8}
+# create a polygon
+a_poly = st_polygon(list(rbind(c(-1, -1), c(1, -1), c(1, 1), c(-1, -1))))
+a = st_sfc(a_poly)
+# create a line
+l_line = st_linestring(x = matrix(c(-1, -1, -0.5, 1), ncol = 2))
+l = st_sfc(l_line)
+# create points
+p_matrix = matrix(c(0.5, 1, -1, 0, 0, 1, 0.5, 1), ncol = 2)
+p_multi = st_multipoint(x = p_matrix)
+p = st_cast(st_sfc(p_multi), "POINT")
+
+st_intersects(p, a, sparse = FALSE)
+st_disjoint(p, a, sparse = FALSE)[, 1]
+sel = st_is_within_distance(p, a, dist = 0.9) # can only return a sparse matrix
+lengths(sel) > 0
+```
+
+st_bboxは括りを設定している．
+後に，ランダムにとったデータの座標系をst_set_crsで4326系(GPSで使用されている座標系)に戻している．
+```{r 04-spatial-operations-19}
+set.seed(2018) # set seed for reproducibility
+(bb_world = st_bbox(world)) # the world's bounds
+random_df = tibble(
+  x = runif(n = 10, min = bb_world[1], max = bb_world[3]),
+  y = runif(n = 10, min = bb_world[2], max = bb_world[4])
+)
+random_points = random_df %>% 
+  st_as_sf(coords = c("x", "y")) %>% # set coordinates
+  st_set_crs(4326) # set geographic CRS
+
+world_random = world[random_points, ]
+nrow(world_random)
+random_joined = st_join(random_points, world["name_long"])
+
+plot(st_geometry(cycle_hire), col = "blue")
+plot(st_geometry(cycle_hire_osm), add = TRUE, pch = 3, col = "red")
+```
+
+st_transformで座標系の変換ができる．27700はメートルの直交座標系．
+
+以下のチャンクを実行した際のcongruentのほうは各地域ごとの値の平均をとるのは簡単．しかしincongruentのほうは市などの境界線が変わってしまっているためややこしくなってしまう．incongruentな場合，推定値は出せるが良い推定を出すのは難しい．
+```{r daiji}
+source("./code/04-areal-example.R", print.eval = TRUE)
+```
+
+マスクを作成している．
+```{r 04-spatial-operations-38, eval=FALSE}
+# create raster mask
+rmask = elev 
+values(rmask) = sample(c(NA, TRUE), 36, replace = TRUE)
+
+# spatial subsetting
+elev[rmask, drop = FALSE]           # with [ operator
+mask(elev, rmask)
+plot(mask(elev, rmask))                   # with mask()
+overlay(elev, rmask, fun = "max")
+plot(overlay(elev, rmask, fun = "max"))   # with overlay
+```
+```{r 04-spatial-operations-41, eval = FALSE}
+elev + elev
+elev^2
+log(elev)
+elev > 5
+```
+
+# chapter 5
+川から50kmを表現するなど演算をするときには直交座標系に直すのが無難．
+
+キャスト
+<!-- a/ points -> lines -> polygons  -->
+```{r 05-geometry-operations-29}
+#linestring = st_cast(multipoint, "LINESTRING")
+#polyg = st_cast(multipoint, "POLYGON")
+```
+
+#820行目あたりまでの一連の流れ，重要．要再確認

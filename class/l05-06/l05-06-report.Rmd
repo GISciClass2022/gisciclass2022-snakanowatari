@@ -43,11 +43,11 @@ tidyverse sp sf
 ```{r}
 #st_point(c(4,2))
 multipoint_matrix = rbind(c(5, 2), c(1, 3), c(3, 4), c(3, 2)) #rbindでは行を追加していく
-multi_point <- st_multipoint(multipoint_matrix)
+#multi_point <- st_multipoint(multipoint_matrix)
 
 multipoint_matrix
-class(multi_point)
-multi_point
+#class(multi_point)
+#multi_point
 ```
 
 
