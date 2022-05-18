@@ -57,16 +57,16 @@ Rasterには3つのclassが存在しており，RasterRayerでは1つのレイ�
 
 ```{r raster}
 #load data
-raster_filepath = system.file("raster/srtm.tif", package = "spDataLarge")
-new_raster = raster(raster_filepath)
-new_raster
-plot(new_raster)
+#raster_filepath = system.file("raster/srtm.tif", package = "spDataLarge")
+#new_raster = raster(raster_filepath)
+#new_raster
+#plot(new_raster)
 
-multi_raster_file = system.file("raster/landsat.tif", package = "spDataLarge")
-multi_raster_file
-r_brick = brick(multi_raster_file)
-r_brick
-plot(r_brick)
+#multi_raster_file = system.file("raster/landsat.tif", package = "spDataLarge")
+#multi_raster_file
+#r_brick = brick(multi_raster_file)
+#r_brick
+#plot(r_brick)
 ```
 
 # 座標系
