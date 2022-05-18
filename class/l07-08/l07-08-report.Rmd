@@ -1,0 +1,68 @@
+---
+title: "第７回目"
+author: "Shun Nakanowatari"
+date: "2022/5/10"
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# prepareing
+ライブラリを読み込む．
+```{r library}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+library(spDataLarge)
+```
+
+
+# データの追加
+worldのデータにcoffee_dataをくっつける．両方のデータに置いてname_longが共通の列なのでその列を参照してworldにcoffee_dataを追加している．name_longのデータが完全に一致しない国においてはcoffee_dataがNAとして追加されている．
+left_joinは第一引数のデータに第二引数のデータを追加するという関数．
+left_joinの代わりにinner_joinを使用すると，NAになる部分が弾かれる．
+plotの際には結果は同じだが，実際にデータを見ると，world_coffee1とworle_coffee2では国の数が大きく異なる．
+```{r add coffee_data}
+world
+coffee_data
+world_coffee1 = left_join(world, coffee_data, by = "name_long")
+world_coffee2 = inner_join(world, coffee_data, by = "name_long")
+world_coffee1
+world_coffee2
+
+plot(world_coffee1["coffee_production_2017"])
+plot(world_coffee2["coffee_production_2017"])
+```
+
+
+# マスキング
+
+まず，データを作成する．
+```{r chapter 3.2.5}
+elev = raster(nrows = 6, ncols = 8, res = 0.5,
+              xmn = -1.5, xmx = 1.5, ymn = -2.0, ymx = 2.0,
+              vals = 1:48)
+plot(elev)
+```
+
+マスクを作成している．
+今回はマスクの通過率を25%にしてみたり，80%にしてみたりする．
+```{r masking}
+rmask1 = elev
+rmask2 = elev
+
+values(rmask1) = sample(c(NA, NA, NA, TRUE), 48, replace = TRUE)
+
+plot(elev[rmask1, drop = FALSE])
+
+values(rmask2) = sample(c(NA, TRUE, TRUE, TRUE, TRUE), 48, replace = TRUE)
+plot(mask(elev, rmask2))
+```
