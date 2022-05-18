@@ -111,22 +111,6 @@ library(spData)
 library(spDataLarge)
 ```
 
-
-# chapter 3
-worldのデータにcoffee_dataをくっつける．両方のデータに置いてname_longが共通の列なのでその列を参照してworldにcoffee_dataを追加している．name_longのデータが完全に一致しない国においてはcoffee_dataがNAとして追加されている．
-left_joinは第一引数のデータに第二引数のデータを追加するという関数．
-left_joinの代わりにinner_joinを使用すると，NAになる部分が弾かれる．
-```{r chapter 3.2.3}
-world
-coffee_data
-
-world_coffee = left_join(world, coffee_data, by = "name_long")
-class(world_coffee)
-world_coffee
-
-plot(world_coffee["coffee_production_2017"])
-```
-
 st_drop_geometry()を使用すると，データフレームのみ残る．
 ```{r chapter 3.2.4}
 world_new = world # do not overwrite our original data
@@ -141,7 +125,6 @@ world %>% transmute(pop_dens = pop/area_km2)
 
 world %>% transmute(pop_dens = pop/area_km2) %>% st_drop_geometry()
 ```
-
 
 
 ```{r chapter 3.2.5}
@@ -228,19 +211,6 @@ st_transformで座標系の変換ができる．27700はメートルの直交座
 source("./code/04-areal-example.R", print.eval = TRUE)
 ```
 
-マスクを作成している．
-```{r 04-spatial-operations-38, eval=FALSE}
-# create raster mask
-rmask = elev 
-values(rmask) = sample(c(NA, TRUE), 36, replace = TRUE)
-
-# spatial subsetting
-elev[rmask, drop = FALSE]           # with [ operator
-mask(elev, rmask)
-plot(mask(elev, rmask))                   # with mask()
-overlay(elev, rmask, fun = "max")
-plot(overlay(elev, rmask, fun = "max"))   # with overlay
-```
 ```{r 04-spatial-operations-41, eval = FALSE}
 elev + elev
 elev^2
