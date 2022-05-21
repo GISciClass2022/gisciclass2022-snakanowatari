@@ -44,7 +44,7 @@ tmap_raster = tm_shape(shp = pop) + tm_raster(palette = "YlGnBu", style = "kmean
 tmap_raster
 ```
 
-pngで保存する．
+作成した地図をpngで保存する．
 ```{r save}
 tmap_save(tm = tmap_vector, filename = "vector_tmap.png")
 tmap_save(tm = tmap_raster, filename = "raster_tmap.png")
