@@ -1,6 +1,6 @@
 ---
 title: "GIScience class final report"
-author: "YOUR NAME"
+author: "Shun Nakanowatari"
 date: "SUBMISSION DATE"
 output:
   html_document:
@@ -14,7 +14,7 @@ subtitle: "テーマ or タイトル"
 fontsize: 11pt
 linestretch: 1.2
 link-citations: yes
-bibliography: bibliography.bib
+bibliography: bibliography.bib #引用元など，参考文献はこのbibliographyに記載
 ---
 
 ```{r setup, include=FALSE}
@@ -36,32 +36,57 @@ CCCCCCCCCCCCCCC.
 
 ## 1. はじめに
 ### 1.1 背景
-XXXXXXXX。 
+今日の日本では犯罪が絶えない。
 Toblerは... [@tobler1970computer]。
-XXXXXXXXXXXX。  
+XXXXXXXXXXXX。
+(もっと書く)
 
 ### 1.2 目的
-XXXXXXXX。   
+日本の犯罪データを可視化することで防犯に活かす。
 
 ## 2. 手法
-XXXXXXXX。
-XXXXXXXXXXXX。  
+tmapを用いてデータを地図で描写する。
+(もっと書く)
 
 ## 3. データ
-XXXXXXXX。
-XXXXXXXXXXXX。  
+ライブラリを読み込んだ上でデータを読み込む。
+```{r library, message=FALSE }
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(readr)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+```{r import data}
+adm1 = st_read("../data/JPN_adm1.shp")
+figure3_crime <- read_csv("../data/figure3_crime.csv")
+crime = left_join(adm1, figure3_crime, by = 'ID_1')
+crime
+```
+
+都道府県のデータはDIVA-GIS、犯罪データは政府統計の犯罪統計を用いている。
+(もっと書く)
 
 ## 4. 結果
-XXXXXXXX。
-XXXXXXXXXXXX。  
+```{r making map}
+tm_shape(crime) + tm_polygons("Recognized_2021", palette = "Blues", n = 20)
+#plot(crime)
+```
+東京都や大阪府は認知件数が特に多い。
+(もっと書く)
 
 ## 5. 考察
-XXXXXXXX。
-XXXXXXXXXXXX。  
+やはり人口が多いと認知件数も多い。
+(もっと書く)
 
 ## 6. 結論
-XXXXXXXX。
-XXXXXXXXXXXX。  
+このような地図を用いてどの地域でどのような犯罪が多いのか意識することで防犯対策に活かせるのではないか。
+(もっと書く)
 
 ## 7. Graphic Abstract
 レポートを表す１枚の図をここで示す。
