@@ -68,7 +68,11 @@ library(ggplot2) # tidyverse data visualization package
 adm1 = st_read("../data/JPN_adm1.shp")
 figure3_crime <- read_csv("../data/figure3_crime.csv")
 crime = left_join(adm1, figure3_crime, by = 'ID_1')
-crime
+crime = left_join(crime, figure6_fire, by = 'ID_1')
+crime = crime %>% dplyr::mutate(rate_fire = Recognized_2021_f / Recognized_2021)
+#print(rate_fire)
+
+#crime
 ```
 
 都道府県のデータはDIVA-GIS、犯罪データは政府統計の犯罪統計を用いている。
@@ -77,6 +81,7 @@ crime
 ## 4. 結果
 ```{r making map, echo=FALSE}
 tm_shape(crime) + tm_polygons("Recognized_2021", palette = "Blues", n = 20)
+tm_shape(crime) + tm_polygons("rate_fire", palette = "Reds", n = 10)
 #plot(crime)
 ```
 東京都や大阪府は認知件数が特に多い。
