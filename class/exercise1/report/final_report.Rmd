@@ -224,5 +224,12 @@ pairs(crime_als2)
 
 また，このような地図を用いてどの地域でどのような犯罪が多いのか意識することで防犯対策に活かせるのではないかと考える．
 
+## 10. Graphic Abstract
+```{r image, echo=FALSE}
+library(png)
+img = readPNG("../data/repofig.PNG")
+plot(0, 0, type = "n", xlim = c(0,505), ylim = c(0, 503))
+rasterImage(img, 0, 0, 505, 503)
+```
 
-## 10. 参考文献
+## 11. 参考文献
