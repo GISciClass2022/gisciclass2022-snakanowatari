@@ -1,0 +1,118 @@
+---
+title: "l11-12"
+author: "Shun Nakanowatari"
+date: "2022/5/24"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# making map
+ライブラリを読み込む．
+```{r library, message=FALSE }
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+データを読み込む．
+```{r import data}
+adm0 = st_read("JPN_adm0.shp")
+adm1 = st_read("JPN_adm1.shp")
+adm2 = st_read("JPN_adm2.shp")
+cov = raster("JPN_msk_cov.vrt")
+pop = raster("JPN_msk_pop.vrt")
+rails = st_read("JPN_rails.shp")
+roads = st_read("JPN_roads.shp")
+```
+
+コンパスや縮尺を入れられる．
+```{r na-sb, message=FALSE, fig.cap="Map with additional elements - a north arrow and scale bar.", out.width="50%", fig.asp=1, fig.scap="Map with a north arrow and scale bar."}
+map_nz = tm_shape(nz) + tm_polygons()
+class(map_nz)
+map_nz + 
+  tm_compass(type = "8star", position = c("left", "top")) +
+  tm_scale_bar(breaks = c(0, 100, 200), text.size = 1)
+```
+
+タイトルなどの設定も可能．
+```{r 08-mapping-14, eval=FALSE}
+map_nz + tm_layout(title = "New Zealand")
+map_nz + tm_layout(scale = 5)
+map_nz + tm_layout(bg.color = "lightblue")
+map_nz + tm_layout(frame = FALSE)
+```
+
+```{r layout1, message=FALSE, fig.cap="Layout options specified by (from left to right) title, scale, bg.color and frame arguments.", fig.scap="Layout options specified by the tmap arguments.", echo=FALSE, fig.asp=0.56}
+source("./code/08-layout1.R", print.eval = TRUE)
+```
+
+```{r layout2, message=FALSE, fig.cap="Illustration of selected layout options.", echo=FALSE, fig.asp=0.56}
+# todo: add more useful settings to this plot
+source("./code/08-layout2.R", print.eval = TRUE)
+```
+
+```{r layout3, message=FALSE, fig.cap="Illustration of selected color-related layout options.", echo=FALSE, fig.asp=0.56}
+source("./code/08-layout3.R", print.eval = TRUE)
+```
+
+色々なスタイルを簡単に指定できる．
+```{r 08-mapping-15, eval=FALSE}
+map_nza + tm_style("bw")
+map_nza + tm_style("classic")
+map_nza + tm_style("cobalt")
+map_nza + tm_style("col_blind")
+```
+
+横長のデータを縦長にする．
+```{r urban-facet, message=FALSE, fig.cap="Faceted map showing the top 30 largest urban agglomerations from 1970 to 2030 based on population projections by the United Nations.", fig.scap="Faceted map showing urban agglomerations.", fig.asp=0.5}
+
+untibble = function(x) structure(x, class = setdiff(class(x), c("tbl_df", "tbl")))
+
+
+urb_1970_2030 = urban_agglomerations %>% 
+  filter(year %in% c(1970, 1990, 2010, 2030)) %>% 
+  untibble()
+
+tm_shape(untibble(world)) +
+  tm_polygons() +
+  tm_shape(urb_1970_2030) +
+  tm_symbols(col = "black", border.col = "white", size = "population_millions") +
+  tm_facets(by = "year", nrow = 2, free.coords = FALSE)#"year"の配列にしたがって年ごとに地図を分けている．
+```
+
+一部を拡大表示してその位置も示している．
+```{r 08-mapping-18}
+nz_map = tm_shape(nz) + tm_polygons() +
+  tm_shape(nz_height) + tm_symbols(shape = 2, col = "red", size = 0.1) + 
+  tm_shape(nz_region) + tm_borders(lwd = 3) 
+
+library(grid)
+nz_height_map
+print(nz_map, vp = viewport(0.8, 0.27, width = 0.5, height = 0.5))#拡大している位置を指し示す．
+```
+
+インタラクティブな地図を描くにはモードを変えれば良い．
+```{r 08-mapping-25, eval=FALSE}
+tmap_mode("view")
+map_nz
+```
+
+2つの地図においてカーソルをリンクさせる．
+```{r 08-mapping-27, eval=FALSE}
+world_coffee = left_join(world, coffee_data, by = "name_long")
+facets = c("coffee_production_2016", "coffee_production_2017")
+tm_shape(world_coffee) + tm_polygons(facets) + 
+  tm_facets(nrow = 1, sync = TRUE)
+```
+

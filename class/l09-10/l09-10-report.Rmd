@@ -1,0 +1,51 @@
+---
+title: "第９回目"
+author: "Shun Nakanowatari"
+date: "2022/5/17"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+# making map
+ライブラリを読み込む．
+```{r library, message=FALSE }
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+データを読み込む．
+```{r import data}
+adm0 = st_read("JPN_adm0.shp")
+adm1 = st_read("JPN_adm1.shp")
+adm2 = st_read("JPN_adm2.shp")
+cov = raster("JPN_msk_cov.vrt")
+pop = raster("JPN_msk_pop.vrt")
+rails = st_read("JPN_rails.shp")
+roads = st_read("JPN_roads.shp")
+```
+
+都道府県別に名前を表示する．
+```{r making vector map}
+tmap_vector = tm_shape(adm1) + tm_polygons(col = "green") + tm_text(text = "NAME_1")
+tmap_vector
+```
+
+都道府県別に人口を色で表す．
+```{r making raster map}
+tmap_raster = tm_shape(shp = pop) + tm_raster(palette = "YlGnBu", style = "kmeans", n = 8)
+tmap_raster
+```
+
+作成した地図をpngで保存する．
+```{r save}
+tmap_save(tm = tmap_vector, filename = "vector_tmap.png")
+tmap_save(tm = tmap_raster, filename = "raster_tmap.png")
+```

@@ -1,0 +1,234 @@
+---
+title: "class_0419"
+author: "Shun Nakanowatari"
+date: "2022/4/19"
+output: html_document
+---
+
+```{r chapetr2-1}
+2+2
+# comment
+log(1)
+exp(1)
+sqrt(4)
+```
+
+```{r chapter2-2}
+# object
+my_obj <- 48
+My_obj <- 46
+
+# character
+my_obj2 <- "R is cool"
+print(my_obj2)
+
+# add
+my_obj + My_obj #OK num + num
+# my_obj + my_obj2 #NG num + char
+
+my_obj3 <- "Hello" 
+# my_obj2 + my_obj3 #NG char + char
+
+paste(my_obj3, my_obj2) #charとcharの結合
+```
+```{r chapeter2-3}
+my_vec <- c(2,3,1,6,4,3,3,7)
+print(my_vec)
+mean(my_vec)
+var(my_vec)
+sd(my_vec)
+length(my_vec)
+
+my_vec2 <- c(2,3,1,6,4,3,3,7,NA)
+var(my_vec)
+var(my_vec, na.rm=TRUE)
+
+my_seq <- 1:10 # c(1,2,3,4,5,6,7,8,9,10)
+print(1:10)
+my_seq2 <- seq(from=1, to=6, by=0.4)
+print(my_seq2)
+```
+
+```{r chapter2-4}
+my_vec[3]
+val_3 <- my_vec[3]
+
+my_vec[c(1,5,6,8)]
+#↑↓same
+id <- c(1,5,6,8)
+my_vec[id]
+
+my_vec[my_vec > 3]
+
+id2 <- my_vec > 3
+my_vec[id2]
+
+id3 <- my_vec < 6 & my_vec > 2 # AND
+id3
+my_vec[id3]
+
+id4 <- my_vec > 6 | my_vec < 3 # OR
+id4
+my_vec[id4]
+```
+
+```{r chapter3-1}
+num <- 2.2
+char <- "hello"
+logi <- TRUE #FALSE
+
+class(num)
+class(char)
+class(logi)
+
+is.numeric(num)
+is.character(char)
+is.logical(logi)
+is.numeric(logi)
+
+num_char <- as.character(num)
+print(num_char)
+class(num_char)
+```
+
+```{r chapter3-2}
+my_mat <- matrix(1:16, nrow=4, byrow=TRUE)
+my_mat
+
+my_array <- array(1:16, dim=c(2,4,2))
+my_array
+my_array[,,1]
+
+my_mat
+rownames(my_mat) <- c("A","B","C","D")
+colnames(my_mat) <- c("a","b","c","d")
+my_mat
+
+#list
+list_1 <- list(c("black","yellow","orange"),
+               c(T,T,F,T,F,F),
+               matrix(1:6, nrow = 3))
+list_1
+
+list_2 <- list(colors = c("black","yellow","orange"),
+               evaluation = c(T,T,F,T,F,F),
+               time = matrix(1:6, nrow = 3))
+list_2
+list_2$colors
+
+str(list_2) #structure
+
+
+##data frames
+p.height <- c(180,155,160,166,181)
+p.weight <- c(65,50,52,58,70)
+p.names <- c("Joanna","Charlotte","Helen","Karen","Amt")
+
+dataf <- data.frame(height = p.height,
+                    weight = p.weight,
+                    names = p.names)
+dataf
+dim(dataf)
+str(dataf)
+```
+
+```{r chapter3-3}
+str(flower)
+```
+
+```{r chapter3-4}
+flower$height
+summary(flower$height)
+
+#3.4.1
+flower[1,4] #pick up the element
+flower[,c(1,4)] #select columns
+flower[c(1,4), ] #slicing rows
+
+```
+
+```{r tidyverse}
+library(tidyverse)
+flower %>% select(height)
+flower %>% select(height, weight)
+flower %>% select(-height, -weight)
+
+flower_height <- flower %>% select(height)
+flower_height
+
+head(flower)
+
+flower %>% filter(nitrogen == "high")
+flower %>% 
+  filter(nitrogen == "high") %>% 
+  filter(height > 13) %>% 
+  select(height, weight)
+
+##問題：data.frameでどのように処理するか？
+flower$nitrogen=="high"
+flower$height>13
+flower$nitrogen=="high" & flower$height>13
+flower[flower$nitrogen=="high" & flower$height>13, c("height", "weight")]
+
+id1 <- flower$nitrogen == "high"
+id2 <- flower$height > 13
+id3 <- id1 & id2
+flower[id3, c("height", "weight")]
+
+#add column
+flower2 <- flower %>% 
+  mutate(height_cm = height/10)
+flower2
+```
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r chapter6-3}
+#回帰
+# weight ~ a * height + b * leafareaを表現するために
+ans <- lm(weight ~ height + leafarea, data = flower)
+summary(ans)
+
+ans2 <- lm(weight ~ height * leafarea, data = flower)
+summary(ans2)
+```
+
+
+```{r chapter7}
+test_func <- function(x){
+  y <- x+1
+  return(y)
+}
+
+test_func(7)
+
+for(i in 1:5){
+  print(i)
+}
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

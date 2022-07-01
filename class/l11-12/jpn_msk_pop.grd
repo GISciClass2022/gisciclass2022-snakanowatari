@@ -1,0 +1,27 @@
+[general] 
+creator=R package 'raster' 
+created= 2011-11-12 16:23:06 
+[georeference] 
+nrows= 464 
+ncols= 500 
+xmin= 122.816666666667 
+ymin= 24.15 
+xmax= 145.933333333333 
+ymax= 45.6 
+projection= +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
+[data] 
+datatype= INT2S 
+byteorder= little 
+nbands= 1 
+bandorder= BIL 
+categorical= FALSE 
+minvalue= 73 
+maxvalue= 6578 
+nodatavalue= -9999 
+[legend] 
+legendtype=  
+values=  
+color=  
+[description] 
+layername= jpn_msk_pop 
+history=  

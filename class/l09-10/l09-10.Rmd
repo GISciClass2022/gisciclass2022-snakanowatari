@@ -1,0 +1,409 @@
+---
+title: "l09-10"
+author: "Shun Nakanowatari"
+date: "2022/5/17"
+output: html_document
+---
+
+```{r 06-reproj-1, message=FALSE}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r 06-reproj-2}
+london = data.frame(lon = -0.1, lat = 51.5) %>% 
+  st_as_sf(coords = c("lon", "lat"))
+st_is_longlat(london)
+```
+
+4326→緯度経度の座標系
+```{r 06-reproj-3}
+london_geo = st_set_crs(london, 4326)
+st_is_longlat(london_geo)
+```
+
+```{r}
+london_buff_no_crs = st_buffer(london, dist = 1) #座標系がしっかりしていないと言われる
+london_buff = st_buffer(london_geo, dist = 1)
+```
+
+```{r 06-reproj-6}
+london_proj = data.frame(x = 530000, y = 180000) %>% 
+  st_as_sf(coords = 1:2, crs = 27700)
+```
+
+```{r 06-reproj-7, eval=FALSE}
+st_crs(london_proj)
+#> Coordinate Reference System:
+#>   EPSG: 27700 
+#>   proj4string: "+proj=tmerc +lat_0=49 +lon_0=-2 ... +units=m +no_defs"
+```
+
+直交座標系において緯度経度1度あたり111320m(約111km)くらいにおいてバッファを書いて変形させる．
+直交座標系(27700)では円が正円になるが，緯度経度の地理座標系(4326)では楕円形になっている．
+よって，距離計算の際には直交座標系を使うのが望ましい．
+```{r 06-reproj-8}
+london_proj_buff = st_buffer(london_proj, 111320)
+```
+```{r crs-buf, fig.cap="Buffers around London with a geographic (left) and projected (right) CRS. The gray outline represents the UK coastline.", fig.scap="Buffers around London with a geographic and projected CRS.",  fig.asp=1, fig.show='hold', out.width="45%", echo=FALSE}
+uk = rnaturalearth::ne_countries(scale = 50) %>% 
+  st_as_sf() %>% 
+  filter(grepl(pattern = "United Kingdom|Ire", x = name_long))
+plot(london_buff, graticule = st_crs(4326), axes = TRUE, reset = FALSE)
+plot(london_geo, add = TRUE)
+plot(st_geometry(uk), add = TRUE, border = "gray", lwd = 3)
+uk_proj = uk %>%
+  st_transform(27700)
+plot(london_proj_buff, graticule = st_crs(27700), axes = TRUE, reset = FALSE)
+plot(london_proj, add = TRUE)
+plot(st_geometry(uk_proj), add = TRUE, border = "gray", lwd = 3)
+```
+
+座標系が違うため，距離計算ができないことの例
+```{r 06-reproj-9, eval=FALSE}
+st_distance(london_geo, london_proj)
+# > Error: st_crs(x) == st_crs(y) is not TRUE
+```
+
+##どの座標系を用いるか
+GPSなどを用いるようなデータの時は4326を使うのが適当であると言えるし，距離計算などをする際には直交座標系を用いるのが良いと言える．ケースバイケース．
+epsgを用いると，座標系のコードを調べることができるため，活用すると良い．
+
+```{r 06-reproj-13}
+lonlat2UTM = function(lonlat) {
+  utm = (floor((lonlat[1] + 180) / 6) %% 60) + 1
+  if(lonlat[2] > 0) {
+    utm + 32600
+  } else{
+    utm + 32700
+  }
+}
+```
+
+
+```{r 06-reproj-14, echo=FALSE, eval=FALSE}
+stplanr::geo_code("Auckland")
+```
+epsgのコードを出す．
+```{r 06-reproj-15}
+epsg_utm_auk = lonlat2UTM(c(174.7, -36.9))
+epsg_utm_lnd = lonlat2UTM(st_coordinates(london))
+st_crs(epsg_utm_auk)$proj4string
+st_crs(epsg_utm_lnd)$proj4string
+```
+
+st_crsで座標系を定義
+```{r 06-reproj-16}
+crs_lnd = st_crs(cycle_hire_osm)
+class(crs_lnd)
+crs_lnd$epsg
+```
+
+#6.5
+worldを色々な座標系にする．まずモルワイデ図法にしてみる
+```{r 06-reproj-22}
+world_mollweide = st_transform(world, crs = "+proj=moll")
+```
+
+```{r mollproj, echo=FALSE, fig.cap="Mollweide projection of the world.", warning=FALSE}
+library(tmap)
+world_mollweide_gr = st_graticule(lat = c(-89.9, seq(-80, 80, 20), 89.9)) %>%
+  lwgeom::st_transform_proj(crs = "+proj=moll")
+tm_shape(world_mollweide_gr) + tm_lines(col = "gray") +
+  tm_shape(world_mollweide) + tm_borders(col = "black") 
+```
+
+ウィントリ
+```{r 06-reproj-23}
+world_wintri = lwgeom::st_transform_proj(world, crs = "+proj=wintri")
+```
+
+```{r 06-reproj-25, eval=FALSE, echo=FALSE}
+# demo of sf_project
+mat_lonlat = as.matrix(data.frame(x = 0:20, y = 50:70))
+plot(mat_lonlat)
+mat_projected = sf_project(from = st_crs(4326)$proj4string, to = st_crs(27700)$proj4string, pts = mat_lonlat)
+plot(mat_projected)
+```
+
+```{r 06-reproj-26}
+world_laea1 = st_transform(world, 
+                           crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=0 +lat_0=0")
+```
+
+中心からのやつ
+```{r laeaproj1, echo=FALSE, fig.cap="Lambert azimuthal equal-area projection centered on longitude and latitude of 0.", fig.scap="Lambert azimuthal equal-area projection of the world", warning=FALSE}
+
+untibble = function(x) structure(x, class = setdiff(class(x), c("tbl_df", "tbl")))
+
+world_laea1_g = st_graticule(ndiscr = 10000) %>%
+  st_transform("+proj=laea +x_0=0 +y_0=0 +lon_0=0 +lat_0=0") %>% 
+  st_geometry() %>% untibble()
+valid_geometries = st_is_valid(world_laea1) # some geometries not valid
+# world_laea1_valid = lwgeom::st_make_valid(world_laea1) # doesn't solve it
+# world_laea1_subset = world_laea1[valid_geometries, ] # solves it but removes countries
+world_laea1_lines = st_cast(world_laea1, "MULTILINESTRING") %>% untibble()
+
+tm_shape(world_laea1_g) + tm_lines(col = "gray") +
+  # tm_shape(world_laea1) + tm_borders(col = "black")
+  tm_shape(world_laea1_lines) + tm_lines(col = "black")
+```
+
+```{r 06-reproj-29}
+cat_raster = raster(system.file("raster/nlcd2011.tif", package = "spDataLarge"))
+crs(cat_raster)
+plot(cat_raster)
+```
+
+```{r 06-reproj-30}
+unique(cat_raster)
+```
+
+```{r 06-reproj-31}
+wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+cat_raster_wgs84 = projectRaster(cat_raster, crs = wgs84, method = "ngb")
+```
+
+```{r catraster, echo=FALSE}
+tibble(
+  CRS = c("NAD83", "WGS84"),
+  nrow = c(nrow(cat_raster), nrow(cat_raster_wgs84)),
+  ncol = c(ncol(cat_raster), ncol(cat_raster_wgs84)),
+  ncell = c(ncell(cat_raster), ncell(cat_raster_wgs84)),
+  resolution = c(mean(res(cat_raster)), mean(res(cat_raster_wgs84),
+                                             na.rm = TRUE)),
+  unique_categories = c(length(unique(values(cat_raster))),
+                        length(unique(values(cat_raster_wgs84))))) %>%
+  knitr::kable(caption = paste("Key attributes in the original ('cat\\_raster')", 
+                               "and projected ('cat\\_raster\\_wgs84')", 
+                               "categorical raster datasets."),
+               caption.short = paste("Key attributes in the original and", 
+                                     "projected raster datasets"),
+               digits = 4, booktabs = TRUE)
+```
+座標を変換するときにどうしても置き換えられないセルも存在するため，データにNAが生じるカテゴリーもある．
+```{r plot}
+#plot(con_raster)
+#plot(con_raster_wgs84)
+
+```
+
+
+```{r 06-reproj-32}
+con_raster = raster(system.file("raster/srtm.tif", package = "spDataLarge"))
+crs(con_raster)
+```
+
+# chapter 7
+
+## a
+ネットからデータを引っ張ってくるなら，e-statや「日本　オープンデータ」で検索するのが良い．
+ベクターデータならばst_readの関数を使えばすぐに読み込める．
+ラスターはrasterやstackを使用
+
+オープンストリートマップを読み込む．bboxの値を東京や埼玉にするとそこのデータをとることができる
+```{r 07-read-write-plot-6, eval=FALSE}
+library(osmdata)
+parks = opq(bbox = "leeds uk") %>% 
+  add_osm_feature(key = "leisure", value = "park") %>% 
+  osmdata_sf()
+```
+
+## format
+```{r formats, echo=FALSE}
+file_formats = tibble::tribble(~Name, ~Extension, ~Info, ~Type, ~Model, 
+                         "ESRI Shapefile", ".shp (the main file)", "Popular format consisting of at least three files. No support for: files > 2GB;  mixed types; names > 10 chars; cols > 255.", "Vector", "Partially open",
+                         "GeoJSON", ".geojson", "Extends the JSON exchange format by including a subset of the simple feature representation.", "Vector", "Open",
+                         "KML", ".kml", "XML-based format for spatial visualization, developed for use with Google Earth. Zipped KML file forms the KMZ format.", "Vector", "Open",
+                         "GPX", ".gpx", "XML schema created for exchange of GPS data.", "Vector", "Open",
+                         "GeoTIFF", ".tif/.tiff", "Popular raster format. A TIFF file containing additional spatial metadata.", "Raster", "Open",
+                         "Arc ASCII", ".asc", "Text format where the first six lines represent the raster header, followed by the raster cell values arranged in rows and columns.", "Raster", "Open",
+                         "R-raster", ".gri, .grd", "Native raster format of the R-package raster.", "Raster", "Open",
+                         "SQLite/SpatiaLite", ".sqlite", "Standalone  relational database, SpatiaLite is the spatial extension of SQLite.", "Vector and raster", "Open",
+                         "ESRI FileGDB", ".gdb", "Spatial and nonspatial objects created by ArcGIS. Allows: multiple feature classes; topology. Limited support from GDAL.", "Vector and raster", "Proprietary",
+                         "GeoPackage", ".gpkg", "Lightweight database container based on SQLite allowing an easy and platform-independent exchange of geodata", "Vector and raster", "Open"
+                         )
+knitr::kable(file_formats, 
+             caption = "Selected spatial file formats.",
+             caption.short = "Selected spatial file formats.",
+             booktabs = TRUE) %>% 
+  kableExtra::column_spec(2, width = "7em") %>% 
+  kableExtra::column_spec(3, width = "14em") %>% 
+  kableExtra::column_spec(5, width = "7em")
+```
+
+## output-bektor
+appendを設定することが重要．TRUEにしておくのが良い
+```{r 07-read-write-plot-28}
+st_write(obj = world, dsn = "world.gpkg", append = TRUE)
+```
+
+## output-raster
+```{r datatypes, echo=FALSE}
+dT = tibble::tribble(
+               ~`Data type`,      ~`Minimum value`,        ~`Maximum value`,
+               "LOG1S",             "FALSE (0)",              "TRUE (1)",
+               "INT1S",                  "-127",                   "127",
+               "INT1U",                     "0",                   "255",
+               "INT2S",               "-32,767",                "32,767",
+               "INT2U",                     "0",                "65,534",
+               "INT4S",        "-2,147,483,647",         "2,147,483,647",
+               "INT4U",                     "0",         "4,294,967,296",
+               "FLT4S",              "-3.4e+38",               "3.4e+38",
+               "FLT8S",             "-1.7e+308",              "1.7e+308"
+  )
+knitr::kable(dT, caption = "Data types supported by the raster package.",
+             caption.short = "Data types supported by the raster package.",
+             booktabs = TRUE)
+```
+
+```{r 07-read-write-plot-34, eval=FALSE}
+writeRaster(single_layer, filename = "my_raster.tif", datatype = "INT2U")
+```
+
+png出力
+```{r 07-read-write-plot-36, eval=FALSE}
+png(filename = "lifeExp.png", width = 500, height = 350)
+plot(world["lifeExp"])
+dev.off()
+```
+
+tmap出力
+```{r 07-read-write-plot-37, eval=FALSE}
+library(tmap)
+tmap_obj = tm_shape(world) + tm_polygons(col = "lifeExp")
+tmap_save(tm = tmap_obj, filename = "lifeExp_tmap.png")
+```
+
+# making map
+```{r library, message=FALSE }
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+```{r import data}
+adm0 = st_read("JPN_adm0.shp")
+adm1 = st_read("JPN_adm1.shp")
+adm2 = st_read("JPN_adm2.shp")
+cov = raster("JPN_msk_cov.vrt")
+pop = raster("JPN_msk_pop.vrt")
+rails = st_read("JPN_rails.shp")
+roads = st_read("JPN_roads.shp")
+```
+
+```{r making map}
+tm_shape(adm1) + tm_borders()
+```
+
+
+# chapter 8
+```{r 08-mapping-1, message=FALSE }
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+```{r 08-mapping-3, eval=FALSE}
+# Add fill layer to nz shape
+tm_shape(nz) +
+  tm_fill() 
+# Add border layer to nz shape
+tm_shape(nz) +
+  tm_borders() 
+# Add fill and border layers to nz shape
+tm_shape(nz) +
+  tm_fill() +
+  tm_borders() 
+```
+
+```{r 08-mapping-4}
+map_nz = tm_shape(nz) + tm_polygons()
+class(map_nz)
+```
+
+```{r 08-mapping-5, results='hide'}
+map_nz1 = map_nz +
+  tm_shape(nz_elev) + tm_raster(alpha = 0.7)
+```
+
+```{r 08-mapping-6}
+nz_water = st_union(nz) %>% st_buffer(22200) %>% 
+  st_cast(to = "LINESTRING")
+map_nz2 = map_nz1 +
+  tm_shape(nz_water) + tm_lines()
+```
+
+```{r 08-mapping-7}
+map_nz3 = map_nz2 +
+  tm_shape(nz_height) + tm_dots()
+```
+
+```{r tmlayers, message=FALSE, fig.cap="Maps with additional layers added to the final map of Figure 8.1.", fig.scap="Additional layers added to the output of Figure 8.1."}
+tmap_arrange(map_nz1, map_nz2, map_nz3)
+```
+
+```{r tmstatic, message=FALSE, fig.cap="The impact of changing commonly used fill and border aesthetics to fixed values.", fig.scap="The impact of changing commonly used aesthetics."}
+ma1 = tm_shape(nz) + tm_fill(col = "red")
+ma2 = tm_shape(nz) + tm_fill(col = "red", alpha = 0.3)
+ma3 = tm_shape(nz) + tm_borders(col = "blue")
+ma4 = tm_shape(nz) + tm_borders(lwd = 3)
+ma5 = tm_shape(nz) + tm_borders(lty = 2)
+ma6 = tm_shape(nz) + tm_fill(col = "red", alpha = 0.3) +
+  tm_borders(col = "blue", lwd = 3, lty = 2)
+tmap_arrange(ma1, ma2, ma3, ma4, ma5, ma6)
+```
+
+```{r 08-mapping-10, fig.show='hide', message=FALSE}
+tm_shape(nz) + tm_fill(col = "Land_area")
+```
+
+```{r 08-mapping-11}
+legend_title = expression("Area (km"^2*")")
+map_nza = tm_shape(nz) +
+  tm_fill(col = "Land_area", title = legend_title) + tm_borders()
+```
+
+```{r 08-mapping-12, eval=FALSE}
+tm_shape(nz) + tm_polygons(col = "Median_income")
+breaks = c(0, 30000, 40000, 50000)
+tm_shape(nz) + tm_polygons(col = "Median_income", breaks = breaks) #0,30000,40000,50000を境界としてわける
+tm_shape(nz) + tm_polygons(col = "Median_income", n = 10) #10段階にわける
+tm_shape(nz) + tm_polygons(col = "Median_income", palette = "BuGn") #色を変える
+```
+
+```{r break-styles, message=FALSE, fig.cap="Illustration of different binning methods set using the style argument in tmap.", , fig.scap="Illustration of different binning methods using tmap.", echo=FALSE}
+source("../../geocompr-master/code/08-break-styles.R", print.eval = TRUE)
+```
+
+```{r 08-mapping-13, eval=FALSE}
+tm_shape(nz) + tm_polygons("Population", palette = "Blues")
+tm_shape(nz) + tm_polygons("Population", palette = "YlOrBr")
+```
+
+```{r 08-mapping-14, eval=FALSE}
+map_nz + tm_layout(title = "New Zealand")
+map_nz + tm_layout(scale = 5)
+map_nz + tm_layout(bg.color = "lightblue")
+map_nz + tm_layout(frame = FALSE)
+```
+
+## tmap関連で困ったら
+tmap in Rで検索！

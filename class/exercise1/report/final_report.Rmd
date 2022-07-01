@@ -1,7 +1,7 @@
 ---
 title: "GIScience class final report"
-author: "YOUR NAME"
-date: "SUBMISSION DATE"
+author: "Shun Nakanowatari"
+date: "2022/6/30"
 output:
   html_document:
     df_print: paged
@@ -10,11 +10,13 @@ output:
     toc_float: true
   github_document:
     toc: yes
-subtitle: "テーマ or タイトル"
+  md_document:
+    toc: yes
+subtitle: "都道府県別の犯罪認知件数を基にした治安の悪さとその原因の考察"
 fontsize: 11pt
 linestretch: 1.2
 link-citations: yes
-bibliography: bibliography.bib
+bibliography: bibliography.bib #引用元など，参考文献はこのbibliographyに記載
 ---
 
 ```{r setup, include=FALSE}
@@ -22,48 +24,212 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## 0. 要旨
-AAAAAAAAAAAAAAAA. 
-BBBBBBBBBBBBBBBB. 
-CCCCCCCCCCCCCCC.   
-
-
-
+現代日本における防犯意識を高める,また,治安の向上をするべく,1人あたりの犯罪認知件数を基に,現在の日本の各都道府県における治安と様々なデータを利用して地図を作成し,そこから得られる見解をこのレポートにまとめた.
+使用したデータは,犯罪に関するデータだけではなく,地域住民のその都道府県の治安に対する意識や教育における生徒の規範意識,さらに人口なども含む. 
 <br>
 <br>
-  
-  下のフォーマットは一例です。　
-レポートの構成は多少替えても大丈夫です。
 
 ## 1. はじめに
 ### 1.1 背景
-XXXXXXXX。 
-Toblerは... [@tobler1970computer]。
-XXXXXXXXXXXX。  
+今日の日本では犯罪が絶えない．重大犯罪のニュースなどを耳にすることも多い．犯罪はいつ誰が被害に遭うかわからないほどに身近なことである．
+しかしながら，犯罪に遭いやすい地域とそうでない地域が存在するのも確かであり，これらを可視化することであらかじめ防犯意識を高めたり，どの地域でどのような犯罪が発生しやすいのかなどを把握しておくことでより対策しやすくなるのではないかと考える．したがってこのレポートでは，都道府県ごとの治安の良さを様々なデータに着目して，それを地図化してまとめることにする．
 
 ### 1.2 目的
-XXXXXXXX。   
+日本の犯罪データや治安状況を可視化することで防犯に活かすための1つの指標とする．
 
 ## 2. 手法
-XXXXXXXX。
-XXXXXXXXXXXX。  
+まず，犯罪認知件数のデータを取り込み，tmapによって地図を作成し，どの地域でどの犯罪が多発していたのかを調べる．
 
-## 3. データ
-XXXXXXXX。
-XXXXXXXXXXXX。  
+その上で，人口1人あたりの犯罪認知件数が少ない地域を"治安が良い"とし，その原因について考えられる事柄について，そのデータを用いて改めてtmapによって地図を作成し，治安の悪さとの相関について考察する．
 
-## 4. 結果
-XXXXXXXX。
-XXXXXXXXXXXX。  
+## 3. データ1
+まず，ライブラリを読み込んだ上でデータを読み込む．
+```{r library, include=FALSE}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+library(readr)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
 
-## 5. 考察
-XXXXXXXX。
-XXXXXXXXXXXX。  
+```{r import data1, include=FALSE}
+adm1 = st_read("../data/JPN_adm1.shp")
+pop <- read_csv("../data/population.csv")
+figure3_crime <- read_csv("../data/figure3_crime.csv")
+figure6_fire <- read_csv("../data/figure6_fire.csv")
+figure6_kill <- read_csv("../data/figure6_kill.csv")
+figure4_steal <- read_csv("../data/figure4_steal.csv")
 
-## 6. 結論
-XXXXXXXX。
-XXXXXXXXXXXX。  
+crime = left_join(adm1, figure3_crime, by = 'ID_1')
+crime = left_join(crime, pop, by = 'ID_1')
+crime = left_join(crime, figure6_fire, by = 'ID_1')
+crime = left_join(crime, figure6_kill, by = 'ID_1')
+crime = left_join(crime, figure4_steal, by = 'ID_1')
 
-## 7. Graphic Abstract
-レポートを表す１枚の図をここで示す。
+crime = crime %>% dplyr::mutate(rate_crime21 =  Recognized_2021 / Population_2021)
+crime = crime %>% dplyr::mutate(rate_fire21 = Recognized_2021_f / Population_2021)
+crime = crime %>% dplyr::mutate(rate_fire20 = Recognized_2020_f / Population_2020)
+crime = crime %>% dplyr::mutate(rate_kill21 = Recognized_2021_k / Population_2021)
+crime = crime %>% dplyr::mutate(rate_kill20 = Recognized_2020_k / Population_2020)
+crime = crime %>% dplyr::mutate(rate_steal21 = Recognized_2021_s / Population_2021)
+crime = crime %>% dplyr::mutate(rate_steal20 = Recognized_2020_s / Population_2020)
+```
 
-## 8. 参考文献
+都道府県の地図データはDIVA-GISのもの，犯罪データは政府統計の犯罪統計のものを用いている．[@hanzai]
+さらに，政府統計より総人口のデータも取り込む．
+
+犯罪データには，2021年の認知件数や検挙件数，その前年との比較などが含まれている．今回は犯罪総数だけではなく，放火，殺人，窃盗の3種類の犯罪についてもそれぞれ都道府県別のデータを取り込んだ．
+
+これらを用いて，人口1人あたりの犯罪認知件数を求め，治安の良し悪しを見る．
+
+## 4. 結果1
+まず，人口1人あたりの犯罪認知件数を地図で表す．
+```{r making map1_1, echo=FALSE}
+tm_shape(crime) + tm_polygons("rate_crime21", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図1:人口1人あたりの犯罪認知件数")
+```
+都市部を見ると比較的濃い赤色やオレンジ色に近い．中でも濃い赤色の大阪府が目立つ．
+それに対して地方では薄い黄色で比較的治安が良いと言える．
+
+また，放火・殺人・窃盗についても同様に人口1人あたりの犯罪認知件数を地図で表す．地図はそれぞれの犯罪ごとに2021年，2020年の順で表示している．
+```{r making map1_2, echo=FALSE}
+tm_shape(crime) + tm_polygons("rate_fire21", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図2:人口1人あたりの放火認知件数(2021)")
+tm_shape(crime) + tm_polygons("rate_fire20", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図3:人口1人あたりの放火認知件数(2020)")
+tm_shape(crime) + tm_polygons("rate_kill21", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図4:人口1人あたりの殺人認知件数(2021)")
+tm_shape(crime) + tm_polygons("rate_kill20", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図5:人口1人あたりの殺人認知件数(2020)")
+tm_shape(crime) + tm_polygons("rate_steal21", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図6:人口1人あたりの窃盗認知件数(2021)")
+tm_shape(crime) + tm_polygons("rate_steal20", palette = "YlOrRd", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図7:人口1人あたりの窃盗認知件数(2020)")
+```
+いずれにおいても大阪府の濃い赤色が目立つ．
+また，それぞれの地図を比較してわかるのは，窃盗と比べて，放火や殺人といった重大犯罪は大阪府を除くと多くの都道府県で色の変化が激しい．
+
+## 5. 考察1
+結果より，以下のことが言えると考えられる．
+<ul>
+<li>大阪府は治安が良いとは言えない
+<li>重大犯罪は治安が良い地域でも他の地域よりも多い割合で起こりうる
+<li>人口1人あたりの窃盗の都道府県間の相対的な認知件数は大きく変化しない
+</ul>
+
+まず，大阪府においては地図を見ると明らかに治安が良いとは言えないことがわかる．これについては，後に各都道府県における警察信頼度についても述べることにする．
+
+次に，放火や殺人などの重大犯罪と窃盗の違いについて，例えば放火においては山形県や高知県を見ると2021年と2020年で色が大きく変化していることがわかる．一方で窃盗においては2021年と2020年で色が大きく変化している都道府県はない．また，最初の人口1人あたりの犯罪認知件数の地図と比較しても非常に類似していると言える．
+その理由として，窃盗は，その絶対数が多いという点があげられる．2021年において犯罪の総数から窃盗の総数の割合を求め，以下に記す．
+```{r steal, echo=FALSE}
+sum(st_set_geometry(crime[, "Recognized_2021_s"], NULL)) / sum(st_set_geometry(crime[, "Recognized_2021"], NULL))
+```
+このように，約67%を窃盗が占めている．そのため，放火や殺人の重大犯罪と比較すると窃盗が多くを占めているため，色の変化が乏しいと言える．
+一方で重大犯罪においては，例えばある1人の連続殺人犯や連続放火犯が存在するだけでも地図の色は変化しうる．したがって，重大犯罪は治安が良い地域でも他の地域よりも多い割合で起こりうると言える．
+
+## 6. データ2
+次に，内閣府の"治安に対する特別世論調査"に基づく"治安が悪くなったと思う原因"の上位項目についてデータを参照して，治安が悪くなってしまう原因について考える．
+"治安が悪くなったと思う原因"の調査結果で上位となった項目は以下の通りである．[@reason]
+<ul>
+<li>地域社会の連帯意識が希薄となったから
+<li>景気が悪くなったから
+<li>様々な情報が氾濫し、それが容易に手に入るようになったから
+<li>青少年の教育が不十分だから
+<li>国民の規範意識が低下したから
+</ul>
+
+今回は，これらの項目に対して使用できるデータを発見することができたものについて検討する．具体的には，以下の3項目について検討する．
+<ul>
+<li>様々な情報が氾濫し、それが容易に手に入るようになったから
+<li>青少年の教育が不十分だから
+<li>国民の規範意識が低下したから
+</ul>
+
+それに伴い，具体的には，以下のデータを使用する．[@jouhou] [@kyouiku]
+<ul>
+<li>インターネット普及率
+<li>人口1人当たりの携帯電話所持率
+<li>携帯電話インターネット普及率
+<li>小学生の規範意識の高さ
+</ul>
+
+さらに，参考データとして，都道府県ごとの体感治安と警察信頼度のデータも使用することにする．[@taikanchian]
+
+```{r import data 2, include=FALSE}
+internet <- read_csv("../data/internet.csv")
+police <- read_csv("../data/police.csv")
+normative_elem <- read_csv("../data/Normative_elem.csv")
+crime = left_join(crime, internet, by = 'ID_1')
+crime = left_join(crime, police, by = 'ID_1')
+crime = left_join(crime, normative_elem, by = 'ID_1')
+```
+
+## 7. 結果2
+まず，内閣府の調査を基にデータの使用を決定した，インターネット普及率，人口1人あたりの携帯電話所持率，携帯電話インターネット普及率，小学生の規範意識の高さについて地図を作成する．
+```{r making map2_1, echo=FALSE}
+tm_shape(crime) + tm_polygons("Internet_penetration", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図8:インターネット普及率")
+tm_shape(crime) + tm_polygons("Cellphone_agreement_penetration", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図9:人口1人あたりの携帯電話所持率")
+tm_shape(crime) + tm_polygons("Cellphone_Internet_penetration", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図10:携帯電話インターネット普及率")
+tm_shape(crime) + tm_polygons("Normative_elementary", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図11:小学生の規範意識の高さ")
+```
+
+次に，体感治安，警察信頼度について地図を作成する．
+```{r making map2_2, echo=FALSE}
+tm_shape(crime) + tm_polygons("Security_experience", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図12:地域住民の体感治安の良さ")
+tm_shape(crime) + tm_polygons("Police_reliability", palette = "Blues", n = 10) + tm_compass(type = "8star", position = c("left", "top")) + tm_scale_bar(breaks = c(0, 200, 400), text.size = 1) + tm_layout(title = "図13:地域警察の信頼度")
+```
+
+
+次に，インターネット普及率，人口1人あたりの携帯電話所持率，携帯電話インターネット普及率，小学生の規範意識の高さにおいて，それぞれ人口1人あたりの犯罪認知件数との相関を求める．それに伴い相関係数とプロットを記す．
+```{r analysis_1, echo=FALSE}
+crime_als = crime[, c("rate_crime21", "Internet_penetration", "Cellphone_agreement_penetration", "Cellphone_Internet_penetration", "Normative_elementary")]
+crime_als = st_set_geometry(crime_als, NULL)
+cor(crime_als)[, 1]
+pairs(crime_als)
+```
+人口1人あたりの犯罪認知件数と最も相関が高かったのは人口1人あたりの携帯電話所持率であった．
+
+次に，体感治安と警察信頼度についても同様に人口1人あたりの犯罪認知件数との相関を求める．
+留意事項として，人口1人あたりの犯罪認知件数は数値が高いほど治安が悪いのに対し，体感治安は数値が高いほど治安が良く，警察信頼度は数値が高いほど警察の信頼度が高いということである．
+```{r analysis_2, echo=FALSE}
+crime_als2 = crime[, c("rate_crime21", "Security_experience","Police_reliability")]
+crime_als2 = st_set_geometry(crime_als2, NULL)
+cor(crime_als2)[, 1]
+pairs(crime_als2)
+```
+
+## 8. 考察2
+この結果から，以下のことが言えると考えられる．
+<ul>
+<li>内閣府の"治安に対する特別世論調査"における"治安が悪くなったと思う原因"は必ずしも正しくない
+<li>地域住民の体感治安はおおよそ正しい
+</ul>
+
+内閣府の"治安に対する特別世論調査"に基づく"治安が悪くなったと思う原因"について
+<ul>
+<li>様々な情報が氾濫し、それが容易に手に入るようになったから
+<li>青少年の教育が不十分だから
+<li>国民の規範意識が低下したから
+</ul>
+という上位項目があったものの，それに関連するデータと治安の悪さとの強い相関は見られなかった．したがって，地域住民の考える治安の悪さの原因は必ずしも正しいとは言えない．
+
+しかしながら，体感治安とはそれなりに強い相関が見られたため，おおよそ正しいと言える．
+
+## 9. 結論
+これらのデータ，地図および相関関係から，以下の結論が得られた．
+<ul>
+<li>大阪府の治安は良くない
+<li>重大犯罪の"発生のしやすさ"は必ずしも治安の良さとは結び付かないものの，窃盗などはその治安の良さと強い結びつきがある
+<li>地域住民は，実際の治安の悪さを理解していても，その原因については必ずしも正しい原因を理解しているとは言えない
+</ul>
+
+したがって，治安の悪い地域に出かける際に防犯意識をより一層高めることは必要だが，治安が良いからと言って重大犯罪に対する警戒を怠るべきではないと言える．また，内閣府の調査結果では，地域住民は，情報を容易に入手できるようになったことや，青少年の教育が不十分であること，規範意識が低下したことを治安が悪い原因としてあげている．しかし，インターネット普及率と教育上の規範意識の向上は，治安の良さとの相関が弱いため，治安を良くするための指標として適当ではないのではないかと言える．
+
+また，このような地図を用いてどの地域でどのような犯罪が多いのか意識することで防犯対策に活かせるのではないかと考える．
+
+## 10. Graphic Abstract
+```{r image, echo=FALSE}
+library(png)
+img = readPNG("../data/repofig.PNG")
+plot(0, 0, type = "n", xlim = c(0,505), ylim = c(0, 503))
+rasterImage(img, 0, 0, 505, 503)
+```
+
+## 11. 参考文献
